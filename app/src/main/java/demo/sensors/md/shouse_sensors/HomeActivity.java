@@ -9,23 +9,14 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-
-import demo.sensors.md.shouse_sensors.view.SlidingTabLayout;
+import android.view.View;
 
 public class HomeActivity extends AppCompatActivity implements DataFragment.OnFragmentInteractionListener, SensorsFragment.OnFragmentInteractionListener{
 
-    /**
-     * A custom {@link ViewPager} title strip which looks much like Tabs present in Android v4.0 and
-     * above, but is designed to give continuous feedback to the user when scrolling.
-     */
     private TabLayout tabLayout;
 
-    /**
-     * A {@link ViewPager} which will be used in conjunction with the {@link SlidingTabLayout} above.
-     */
     private ViewPager viewPager;
 
 
