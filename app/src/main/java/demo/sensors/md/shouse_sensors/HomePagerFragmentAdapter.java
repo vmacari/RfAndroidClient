@@ -5,7 +5,8 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 
-import demo.sensors.md.shouse_sensors.enums.HomeTab;
+import demo.sensors.md.shouse_sensors.models.Node;
+import demo.sensors.md.shouse_sensors.ws.DataHolder;
 
 /**
  * Created by elisita on 11/5/16.
@@ -22,29 +23,20 @@ public class HomePagerFragmentAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public Fragment getItem(int position) {
+        Node node = DataHolder.getNodes().get(position);
 
-        HomeTab tab = HomeTab.values()[position];
-        Fragment fragment = null;
-        switch (tab) {
-            case DATA:
-                fragment = new DataFragment();
-                break;
-            case SENSORS:
-                fragment = new SensorsFragment();
-                break;
-        }
-        return fragment;
+        return SensorsFragment.newInstance(node.getId());
     }
 
     @Override
     public int getCount() {
-        return HomeTab.values().length;
+        return DataHolder.getNodes().size();
     }
 
     @Override
     public CharSequence getPageTitle(int position) {
-        HomeTab tab = HomeTab.values()[position];
+        Node node = DataHolder.getNodes().get(position);
 
-        return context.getString(tab.getTitleRes());
+        return node.getName();
     }
 }

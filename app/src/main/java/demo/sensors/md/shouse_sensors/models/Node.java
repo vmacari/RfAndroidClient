@@ -7,6 +7,7 @@ import java.util.Date;
  */
 
 public class Node {
+    private int id;
     private String name;
     private String version;
     private Date lastUpdateTime;
@@ -15,6 +16,10 @@ public class Node {
     private String configuration;
     private Boolean isRebooting;
     private String protocol;
+
+    public int getId() {
+        return id;
+    }
 
     public String getName() {
         return name;

@@ -12,12 +12,35 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
+
+import demo.sensors.md.shouse_sensors.ws.ApiServiceProvider;
+import demo.sensors.md.shouse_sensors.ws.DataHolder;
+import demo.sensors.md.shouse_sensors.ws.response.NodesResponse;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HomeActivity extends AppCompatActivity implements DataFragment.OnFragmentInteractionListener, SensorsFragment.OnFragmentInteractionListener{
 
     private TabLayout tabLayout;
 
     private ViewPager viewPager;
+
+    Callback<NodesResponse> nodesCallback =  new Callback<NodesResponse>() {
+        @Override
+        public void onResponse(Call<NodesResponse> call, Response<NodesResponse> response) {
+            if(response.isSuccessful() && response.body() != null && response.body().getData().size() != 0) {
+                DataHolder.setNodes(response.body().getData());
+                setupTabs();
+            }
+        }
+
+        @Override
+        public void onFailure(Call<NodesResponse> call, Throwable t) {
+            Toast.makeText(HomeActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    };
 
 
     @Override
@@ -52,11 +75,24 @@ public class HomeActivity extends AppCompatActivity implements DataFragment.OnFr
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_refresh) {
+            requestNodes();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        requestNodes();
+    }
+
+    private void requestNodes(){
+        Call<NodesResponse> nodesResponseCall = ApiServiceProvider.getApiService().getNodes();
+        nodesResponseCall.enqueue(nodesCallback);
     }
 
     private void setupView(View parent) {
@@ -66,24 +102,33 @@ public class HomeActivity extends AppCompatActivity implements DataFragment.OnFr
 
             CollapsingToolbarLayout collapsingToolbar =
                     (CollapsingToolbarLayout) findViewById(R.id.collapsing_toolbar);
-            collapsingToolbar.setTitle(getString(R.string.app_name));
+//            collapsingToolbar.setTitle(getString(R.string.app_name));
+            collapsingToolbar.setTitleEnabled(false);
 
-            // Fragment manager to add fragment in viewpager we will pass object of Fragment manager to adpater class.
-            FragmentManager fragmentManager = getSupportFragmentManager();
-
-            viewPager = (ViewPager) parent.findViewById(R.id.viewpager);
-            tabLayout = (TabLayout) parent.findViewById(R.id.tabs);
-
-            viewPager.setAdapter(new HomePagerFragmentAdapter(fragmentManager, this));
-
-            tabLayout.setupWithViewPager(viewPager);
-
-            // adding functionality to tab and viewpager to manage each other when a page is changed or when a tab is selected
-            viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
 
             setupCollapsingToolbar();
             setupToolbar();
         }
+    }
+
+    private void setupTabs() {
+        final CollapsingToolbarLayout collapsingToolbar = (CollapsingToolbarLayout) findViewById(
+                R.id.collapsing_toolbar);
+
+        collapsingToolbar.setTitleEnabled(false);
+        // Fragment manager to add fragment in viewpager we will pass object of Fragment manager to adpater class.
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        viewPager = (ViewPager) findViewById(R.id.viewpager);
+        tabLayout = (TabLayout) findViewById(R.id.tabs);
+
+        viewPager.setAdapter(new HomePagerFragmentAdapter(fragmentManager, this));
+
+        tabLayout.setupWithViewPager(viewPager);
+
+        // adding functionality to tab and viewpager to manage each other when a page is changed or when a tab is selected
+        viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
+
     }
 
     private void setupCollapsingToolbar() {
