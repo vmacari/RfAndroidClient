@@ -6,7 +6,6 @@ import java.util.List;
 import demo.sensors.md.shouse_sensors.models.Data;
 import demo.sensors.md.shouse_sensors.models.Node;
 import demo.sensors.md.shouse_sensors.models.Sensor;
-import demo.sensors.md.shouse_sensors.util.Logger;
 
 /**
  * Created by elisita on 11/7/16.
@@ -43,17 +42,25 @@ public class DataHolder {
                 sensors.add(sensor);
             }
         }
-        Logger.d("Sensros added: ");
-        for (Sensor sensor : sensors) {
-            Logger.d(sensor.getNodeId() + ":" + sensor.getId());
-        }
     }
 
-    public static List<Data> getData() {
-        return data;
+    public static List<Data> getData(int nodeId, int sensorId) {
+        List<Data> sensorsData = new ArrayList<>();
+
+        for (Data sensorData : data) {
+            if (sensorData.getNodeId() == nodeId && sensorData.getSensorId() == sensorId) {
+                sensorsData.add(sensorData);
+            }
+        }
+        return sensorsData;
+
     }
 
     public static void addData(List<Data> newData) {
-        data = newData;
+        for (Data sensorData : newData) {
+            if (!data.contains(sensorData)) {
+                data.add(sensorData);
+            }
+        }
     }
 }
