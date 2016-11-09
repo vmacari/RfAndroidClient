@@ -19,6 +19,6 @@ public interface IApiService {
     @GET("/sensor/{id}")
     Call<SensorsResponse> getSensors(@Path("id") int nodeId);
 
-    @GET("/data/{node_id}/{sensor_id}")
-    Call<DataResponse> getData(@Path("node_id") int nodeId, @Path("sensor_id") int sensorId);
+    @GET("/data/{node_id}/{sensor_id}/{limit}")
+    Call<DataResponse> getData(@Path("node_id") int nodeId, @Path("sensor_id") int sensorId, @Path("limit") int limit);
 }

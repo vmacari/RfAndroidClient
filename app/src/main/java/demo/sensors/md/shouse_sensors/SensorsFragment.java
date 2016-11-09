@@ -4,20 +4,28 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.robinhood.spark.SparkAdapter;
+import com.robinhood.spark.SparkView;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import demo.sensors.md.shouse_sensors.enums.SensorType;
+import demo.sensors.md.shouse_sensors.models.Data;
 import demo.sensors.md.shouse_sensors.models.Sensor;
+import demo.sensors.md.shouse_sensors.util.Logger;
 import demo.sensors.md.shouse_sensors.ws.ApiServiceProvider;
 import demo.sensors.md.shouse_sensors.ws.DataHolder;
 import demo.sensors.md.shouse_sensors.ws.response.DataResponse;
@@ -40,7 +48,6 @@ public class SensorsFragment extends Fragment {
         public void onResponse(Call<SensorsResponse> call, Response<SensorsResponse> response) {
             if (response.isSuccessful() && response.body() != null && response.body().getData().size() != 0) {
                 DataHolder.addSensors(response.body().getData());
-                Toast.makeText(getContext(), "Success: " + response.body().getData().size(), Toast.LENGTH_LONG).show();
                 requestDataForSensors();
             }
         }
@@ -48,6 +55,7 @@ public class SensorsFragment extends Fragment {
         @Override
         public void onFailure(Call<SensorsResponse> call, Throwable t) {
             Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            stopRefreshing();
         }
     };
 
@@ -86,8 +94,10 @@ public class SensorsFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.frg_sensors_layout, container, false);
+        View parent = LayoutInflater.from(getContext()).inflate(R.layout.frg_sensors_layout, container, false);
+        setup(parent);
+
+        return parent;
     }
 
     @Override
@@ -115,7 +125,7 @@ public class SensorsFragment extends Fragment {
     private void requestDataForSensors() {
         for (Sensor sensor : DataHolder.getSensors(nodeId)) {
             dataRequestsCount++;
-            Call<DataResponse> dataResponseCall = ApiServiceProvider.getApiService().getData(nodeId, sensor.getId());
+            Call<DataResponse> dataResponseCall = ApiServiceProvider.getApiService().getData(nodeId, sensor.getId(), 300);
             dataResponseCall.enqueue(new Callback<DataResponse>() {
                 @Override
                 public void onResponse(Call<DataResponse> call, Response<DataResponse> response) {
@@ -123,7 +133,6 @@ public class SensorsFragment extends Fragment {
                     checkDataRequestCount();
                     if (response.isSuccessful() && response.body() != null && response.body().getData().size() != 0) {
                         DataHolder.addData(response.body().getData());
-                        Toast.makeText(getContext(), "Data: " + response.body().getData().size(), Toast.LENGTH_LONG).show();
                     }
 
                 }
@@ -141,12 +150,35 @@ public class SensorsFragment extends Fragment {
     private void checkDataRequestCount() {
         if (dataRequestsCount == 0) {
             populateList();
+            stopRefreshing();
         }
+    }
+
+    private void setup(View parent) {
+        SwipeRefreshLayout swipeContainer = (SwipeRefreshLayout) parent.findViewById(R.id.swipeContainer);
+        // Setup refresh listener which triggers new data loading
+        swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                requestSensors();
+            }
+        });
+        // Configure the refreshing colors
+        swipeContainer.setColorSchemeResources(android.R.color.holo_blue_bright,
+                android.R.color.holo_green_light,
+                android.R.color.holo_orange_light,
+                android.R.color.holo_red_light);
+
+    }
+
+    private void stopRefreshing() {
+        SwipeRefreshLayout swipeContainer = (SwipeRefreshLayout) getView().findViewById(R.id.swipeContainer);
+        swipeContainer.setRefreshing(false);
     }
 
     private void populateList() {
         RecyclerView recyclerView = (RecyclerView) getView().findViewById(R.id.recycler_view);
-        recyclerView.setAdapter(new SensorsAdapter(DataHolder.getSensors(nodeId)));
+        recyclerView.setAdapter(new SensorsAdapter(nodeId));
 
         final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
@@ -163,9 +195,13 @@ public class SensorsFragment extends Fragment {
     public static class SensorsAdapter extends RecyclerView.Adapter<SensorViewHolder> {
 
         List<Sensor> sensors = new ArrayList<>();
+        Map<Sensor, ArrayList<Float>> dataSet = new LinkedHashMap<>();
+        int nodeId;
 
-        public SensorsAdapter(List<Sensor> sensors) {
-            this.sensors = sensors;
+        public SensorsAdapter(int nodeId) {
+            this.nodeId = nodeId;
+            this.sensors = DataHolder.getSensors(nodeId);
+            generateDataSet();
         }
 
         @Override
@@ -180,9 +216,14 @@ public class SensorsFragment extends Fragment {
         @Override
         public void onBindViewHolder(SensorViewHolder viewHolder, int i) {
             Sensor sensor = sensors.get(i);
-            viewHolder.categoryTitleView.setText(sensor.getName());
-//            viewHolder.parentView.setBackgroundColor(category.getColor());
-//            viewHolder.categoryIcon.setImageResource(CategoryIconEnum.values()[category.getIconId()].getIconWhiteRes());
+            List<Float> sensorRawData = dataSet.get(sensor);
+            SensorType sensorType = SensorType.getByName(sensor.getType());
+            viewHolder.nameView.setText(sensor.getName());
+            viewHolder.chartView.setAdapter(new ChartAdapter(sensorRawData));
+            if (sensorRawData.size() != 0) {
+                String sensorCurrentValueLabel = sensorRawData.get(sensorRawData.size() - 1) + sensorType.getUnit();
+                viewHolder.currentValueView.setText(sensorCurrentValueLabel);
+            }
         }
 
         @Override
@@ -190,19 +231,58 @@ public class SensorsFragment extends Fragment {
             return sensors.size();
         }
 
+        private void generateDataSet() {
+            for (Sensor sensor : sensors) {
+                ArrayList<Data> sensorData = (ArrayList<Data>) DataHolder.getData(nodeId, sensor.getId());
+                ArrayList<Float> rawData = new ArrayList<>();
+                for (Data data : sensorData) {
+                    try {
+                        rawData.add(Float.valueOf(data.getData()));
+                    } catch (Exception e) {
+                        Logger.d(e.getMessage());
+                    }
+                }
+                dataSet.put(sensor, rawData);
+            }
+        }
+
     }
 
     private static class SensorViewHolder extends RecyclerView.ViewHolder {
 
-        TextView categoryTitleView;
-        ImageView categoryIcon;
-        View parentView;
+        TextView nameView;
+        TextView currentValueView;
+        SparkView chartView;
+
 
         public SensorViewHolder(View itemView) {
             super(itemView);
-            categoryTitleView = (TextView) itemView.findViewById(R.id.category_title);
-//            categoryIcon = (ImageView) itemView.findViewById(R.id.categoryIcon);
-            parentView = itemView;
+            nameView = (TextView) itemView.findViewById(R.id.sensorName);
+            currentValueView = (TextView) itemView.findViewById(R.id.sensorCurrentValue);
+            chartView = (SparkView) itemView.findViewById(R.id.chartView);
+        }
+    }
+
+    public static class ChartAdapter extends SparkAdapter {
+        private List<Float> yData = new ArrayList<>();
+
+        public ChartAdapter(List<Float> yData) {
+            this.yData = yData;
+        }
+
+        @Override
+        public int getCount() {
+            return yData.size();
+        }
+
+        @Override
+        public Object getItem(int index) {
+            return yData.get(index);
+        }
+
+        @Override
+        public float getY(int index) {
+            return yData.get(index);
         }
     }
 

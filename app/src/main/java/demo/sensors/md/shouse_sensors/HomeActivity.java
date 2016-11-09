@@ -21,7 +21,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class HomeActivity extends AppCompatActivity implements DataFragment.OnFragmentInteractionListener, SensorsFragment.OnFragmentInteractionListener{
+public class HomeActivity extends AppCompatActivity implements SensorsFragment.OnFragmentInteractionListener{
 
     private TabLayout tabLayout;
 

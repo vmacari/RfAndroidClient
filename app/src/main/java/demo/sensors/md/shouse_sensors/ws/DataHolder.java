@@ -23,6 +23,8 @@ public class DataHolder {
 
     public static void setNodes(List<Node> newNodes) {
         nodes = newNodes;
+        sensors.clear();
+        data.clear();
     }
 
     public static List<Sensor> getSensors(int nodeId) {

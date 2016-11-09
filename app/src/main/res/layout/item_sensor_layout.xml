@@ -1,30 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardview"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="3dp"
-    android:background="@drawable/round_rect_bg">
+    android:layout_height="200dp"
+    android:layout_margin="10dp"
+    android:elevation="100dp"
+    card_view:cardCornerRadius="8dp">
+
+    <!--card_view:cardBackgroundColor="@color/cardview_initial_background"-->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:weightSum="6">
+
+        <TextView
+            android:id="@+id/sensorName"
+            style="@style/Base.TextAppearance.AppCompat.Small"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:text="Temperature" />
+
+        <TextView
+            android:id="@+id/sensorCurrentValue"
+            style="@style/Base.TextAppearance.AppCompat.Large"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_gravity="center"
+            android:layout_weight="2"
+            android:text="123.4 C" />
+
+        <com.robinhood.spark.SparkView
+            android:id="@+id/chartView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="3" />
+
+    </LinearLayout>
 
 
-    <ImageView
-        android:id="@+id/categoryIcon"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:layout_alignParentLeft="true"
-        android:layout_margin="16dp" />
-
-
-    <TextView
-        android:id="@+id/category_title"
-        style="@style/Base.TextAppearance.AppCompat.Large"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_centerInParent="true"
-        android:layout_gravity="center"
-        android:layout_margin="10dp"
-        android:layout_toRightOf="@+id/categoryIcon"
-        android:text="dsafasfas"
-        android:textColor="@android:color/white" />
-
-</RelativeLayout>
+</android.support.v7.widget.CardView>
