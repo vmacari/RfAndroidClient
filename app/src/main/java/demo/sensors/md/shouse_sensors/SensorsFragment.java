@@ -40,6 +40,8 @@ public class SensorsFragment extends Fragment {
 
     private int nodeId;
     private int dataRequestsCount = 0;
+    private Call<SensorsResponse> sensorResponseCall;
+    private Call<DataResponse> dataResponseCall;
 
     private OnFragmentInteractionListener mListener;
 
@@ -54,7 +56,9 @@ public class SensorsFragment extends Fragment {
 
         @Override
         public void onFailure(Call<SensorsResponse> call, Throwable t) {
-            Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            }
             stopRefreshing();
         }
     };
@@ -117,15 +121,26 @@ public class SensorsFragment extends Fragment {
         mListener = null;
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (sensorResponseCall != null) {
+            sensorResponseCall.cancel();
+        }
+        if (dataResponseCall != null) {
+            dataResponseCall.cancel();
+        }
+    }
+
     private void requestSensors() {
-        Call<SensorsResponse> sensorResponseCall = ApiServiceProvider.getApiService().getSensors(nodeId);
+        sensorResponseCall = ApiServiceProvider.getApiService().getSensors(nodeId);
         sensorResponseCall.enqueue(sensorsCallback);
     }
 
     private void requestDataForSensors() {
         for (Sensor sensor : DataHolder.getSensors(nodeId)) {
             dataRequestsCount++;
-            Call<DataResponse> dataResponseCall = ApiServiceProvider.getApiService().getData(nodeId, sensor.getId(), 300);
+            dataResponseCall = ApiServiceProvider.getApiService().getData(nodeId, sensor.getId(), 50);
             dataResponseCall.enqueue(new Callback<DataResponse>() {
                 @Override
                 public void onResponse(Call<DataResponse> call, Response<DataResponse> response) {
@@ -141,7 +156,9 @@ public class SensorsFragment extends Fragment {
                 public void onFailure(Call<DataResponse> call, Throwable t) {
                     dataRequestsCount--;
                     checkDataRequestCount();
-                    Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                    }
                 }
             });
         }
@@ -172,19 +189,23 @@ public class SensorsFragment extends Fragment {
     }
 
     private void stopRefreshing() {
-        SwipeRefreshLayout swipeContainer = (SwipeRefreshLayout) getView().findViewById(R.id.swipeContainer);
-        swipeContainer.setRefreshing(false);
+        if (getView() != null) {
+            SwipeRefreshLayout swipeContainer = (SwipeRefreshLayout) getView().findViewById(R.id.swipeContainer);
+            swipeContainer.setRefreshing(false);
+        }
     }
 
     private void populateList() {
-        RecyclerView recyclerView = (RecyclerView) getView().findViewById(R.id.recycler_view);
-        recyclerView.setAdapter(new SensorsAdapter(nodeId));
+        if (getView() != null) {
+            RecyclerView recyclerView = (RecyclerView) getView().findViewById(R.id.recycler_view);
+            recyclerView.setAdapter(new SensorsAdapter(nodeId));
 
-        final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        recyclerView.setLayoutManager(layoutManager);
-        recyclerView.setHasFixedSize(true);
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
+            final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+            layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+            recyclerView.setLayoutManager(layoutManager);
+            recyclerView.setHasFixedSize(true);
+            recyclerView.setItemAnimator(new DefaultItemAnimator());
+        }
     }
 
 
